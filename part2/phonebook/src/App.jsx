@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const Filter = ({handleFilter, filter}) => {
   return (
@@ -41,9 +41,14 @@ const App = () => {
     { name: 'Arto Hellas', number:'3434-34565456'}
   ])
   const [filter, setFilter] = useState('')
-
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
+
+  useEffect(() => {
+    fetch('http://localhost:3001/persons')
+      .then(response => response.json())
+      .then(json => setPersons(json))
+  }, [])
 
   let newPersons = filter.length > 0 
     ? persons.filter(person => person.name.toLowerCase().includes(filter.toLowerCase()))
