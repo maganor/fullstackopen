@@ -1,3 +1,4 @@
+import phonebook from "./services/phonebook"
 import { useState, useEffect } from 'react'
 
 const Filter = ({handleFilter, filter}) => {
@@ -27,27 +28,27 @@ const PersonForm = ({onSubmit, nameChange, numberChange, name, number}) => {
   )
 }
 
-const Persons = ({ persons }) => {
+const Persons = ({ persons, handleDelete }) => {
   return (
     <div>
       <h2>Numbers</h2>
-      {persons.map(person => <p key={person.name}>{person.name} {person.number}</p>)}
+      {persons.map(person =>
+          <li key={person.name}>{person.name} {person.number}<button onClick={() => handleDelete(person.id)}>delete</button></li>
+          
+      )}
     </div>
   )
 }
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number:'3434-34565456'}
-  ])
+  const [persons, setPersons] = useState([])
   const [filter, setFilter] = useState('')
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:3001/persons')
-      .then(response => response.json())
-      .then(json => setPersons(json))
+    phonebook.getAll()
+      .then(allPersons => setPersons(allPersons))
   }, [])
 
   let newPersons = filter.length > 0 
@@ -60,23 +61,37 @@ const App = () => {
 
   const handleNumberChange = (event) => setNewNumber(event.target.value)
 
+  const handleDelete = (id) => {
+    let response = confirm(`you sure you want to remove this person?`)
+    if(response) {
+      phonebook.remove(id)
+      .then(deletedPerson => setPersons(persons.filter(person => person.name != deletedPerson.name)))
+    }
+  }
+
   const addPerson = (event) => {
     event.preventDefault()
-    let isAdded = false;
     const newPerson = {
       name: newName,
-      number: newNumber
+      number: newNumber,
+      id: String(persons.length + 1)
     }
-    persons.forEach(person => {
-      if(newPerson.name.toLowerCase() == person.name.toLowerCase()){
-        isAdded = true
-      }
-    })
 
-    if(isAdded) { alert(`${newPerson.name} is already added to phonebook`) } 
-    else { setPersons(persons.concat(newPerson)) }
-    setNewName('')
-    setNewNumber('')
+    let found = persons.find(person => newPerson.name.toLowerCase() == person.name.toLowerCase())
+
+    if(found) { 
+      let conf = confirm(`${newPerson.name} is already added to phonebook, replace old number with new one?`)
+      if(conf) {
+        phonebook.update(found.id, {...found, number: newNumber})
+          .then(updated => setPersons(persons.map(person => person.id == updated.id ? {...person, number: updated.number} : person)))
+      } 
+    } 
+    else { 
+      phonebook.create(newPerson)
+        .then(response => setPersons(persons.concat(response)))
+      setNewName('')
+      setNewNumber('')
+    }
   }
 
   return (
@@ -87,7 +102,7 @@ const App = () => {
         onSubmit={addPerson} 
         nameChange={handleNameChange} numberChange={handleNumberChange} 
         name={newName} number={newNumber}/>
-      <Persons persons={newPersons}/>
+      <Persons persons={newPersons} handleDelete={handleDelete}/>
     </div>
   )
 }
