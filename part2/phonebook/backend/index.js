@@ -1,4 +1,5 @@
 const express = require('express')
+const morgan = require('morgan')
 
 let persons = [
     { 
@@ -27,6 +28,9 @@ const app = express()
 
 app.use(express.json())
 
+morgan.token('body', (req, res) => JSON.stringify(req['body']))
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
+
 app.get("/api/persons", (request, response) => {
     response.json(persons)
 })
@@ -43,7 +47,6 @@ app.get("/api/persons/:id", (request, response) => {
 
 app.post("/api/persons", (request, response) => {
     const body = request.body
-    console.log(body)
     let found = persons.find(person => person.name === body.name)
     if(!body.name || !body.number) {
         return response.status(400).json({error: "Name or number missing"})
