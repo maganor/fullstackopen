@@ -1,6 +1,15 @@
 import phonebook from "./services/phonebook"
 import { useState, useEffect } from 'react'
 
+const Notification  = ({ message, type }) => {
+  if(message === null || type === null) {
+    return null
+  }
+  return (
+    <div className={type}>{message}</div>
+  )
+}
+
 const Filter = ({handleFilter, filter}) => {
   return (
     <div>
@@ -45,6 +54,8 @@ const App = () => {
   const [filter, setFilter] = useState('')
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
+  const [message, setMessage] = useState(null)
+  const [typeMessage, setTypeMessage] = useState(null)
 
   useEffect(() => {
     phonebook.getAll()
@@ -66,6 +77,11 @@ const App = () => {
     if(response) {
       phonebook.remove(id)
       .then(deletedPerson => setPersons(persons.filter(person => person.name != deletedPerson.name)))
+      .catch(() => {
+        setMessage("Error deleting that person")
+        setTypeMessage("error")
+        setTimeout(() => {setMessage(null); setTypeMessage(null)}, 1000)
+      }) 
     }
   }
 
@@ -88,7 +104,12 @@ const App = () => {
     } 
     else { 
       phonebook.create(newPerson)
-        .then(response => setPersons(persons.concat(response)))
+        .then(response => {
+          setPersons(persons.concat(response))
+        })
+      setMessage(`Added ${newPerson.name}`)
+      setTypeMessage("success")
+      setTimeout(() => {setMessage(null); setTypeMessage(null)}, 1000)
       setNewName('')
       setNewNumber('')
     }
@@ -97,6 +118,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={message} type={typeMessage}/>
       <Filter filter={filter} handleFilter={handleFilterChange}/>
       <PersonForm 
         onSubmit={addPerson} 
